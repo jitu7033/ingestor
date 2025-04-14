@@ -9,8 +9,4 @@ public class IngestionRequest {
     private List<String> columns;
     private String fileName;
     private String delimiter;
-
-    public String getDelimiter() {
-        return "";
-    }
 }

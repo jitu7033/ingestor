@@ -3,7 +3,9 @@ package com.example.ingestor.model;
 
 import com.example.ingestor.controller.IngestionController;
 import lombok.Data;
+import lombok.Getter;
 
+@Getter
 @Data
 public class IngestionResult {
     private long recordCount;
@@ -13,5 +15,6 @@ public class IngestionResult {
         this.recordCount = recordCount;
         this.message = message;
     }
+
 
 }

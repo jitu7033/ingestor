@@ -1,3 +1,4 @@
+
 package com.example.ingestor.controller;
 
 import com.example.ingestor.model.IngestionRequest;
@@ -8,90 +9,75 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/***
-import define dependencies for the controller including model classes for request or response
-services classes for business logic spring web enable annotation enable rest api functionality
- **/
+import java.util.List;
 
-
-// Marks this class as a REST controller, handling HTTP requests under the /api/ingestion base path.
-
+// rest controller
 @RestController
 @RequestMapping("/api/ingestion")
 public class IngestionController {
-    // Autowires service beans to handle ClickHouse and Flat file operation
-    // dependency injection ensure loose coupling and testability
+
 
     @Autowired
     private ClickHouseService clickHouseService;
     @Autowired
     private FlatFileService flatFileService;
 
-    // Get endPoint to test clickHouse connection ;
+
+    // check connection are established or not
     @GetMapping("/test-connection")
-    public String testConnection(){
+    public String testConnection() {
         return clickHouseService.testConnection();
     }
 
+    // get the table from the table columns
     @GetMapping("/tables")
-
-
-    // GET endpoint to retrieve all table names from ClickHouse.
-    public ResponseEntity<?>getTables(){
-        try{
+    public ResponseEntity<?> getTables() {
+        try {
             return ResponseEntity.ok(clickHouseService.getTables());
-        }
-        catch (Exception e){
-            return ResponseEntity.status(500).body("Error Fetching Tables " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error fetching tables: " + e.getMessage());
         }
     }
 
-
-    // get end point to retrieve all the table name with the respect of column
     @GetMapping("/columns/{tableName}")
-    public ResponseEntity<?>getColumns(@PathVariable String tableName){
-        try{
-            return ResponseEntity.ok(clickHouseService.getColumns(tableName));
-        }
-        catch(Exception e){
-            return ResponseEntity.status(500).body("Error Fetching Columns : " + e.getMessage());
+    public ResponseEntity<?> getColumns(@PathVariable String tableName) {
+        try {
+            return ResponseEntity.ok(clickHouseService.getTableColumns(tableName));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error fetching columns: " + e.getMessage());
         }
     }
 
-    // post endpoint to send the data from click house to flatFile csv
+    // convert the clickhouse to flatfile
+
     @PostMapping("/clickhouse-to-flatfile")
-    public ResponseEntity<?>clickHouseTOFLatFile(@RequestBody IngestionRequest request){
-        try{
+    public ResponseEntity<?> clickHouseToFlatFile(@RequestBody IngestionRequest request) {
+        try {
             long count = clickHouseService.clickHouseToFlatFile(
                     request.getTableName(),
                     request.getColumns(),
                     request.getFileName(),
                     request.getDelimiter()
             );
-
-            return ResponseEntity.ok(new IngestionResult(count,"Ingestion Completed"));
-        }
-        catch (Exception e){
-            return ResponseEntity.status(500).body("Error : " + e.getMessage());
+            return ResponseEntity.ok(new IngestionResult(count, "Ingestion completed"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 
-    // post endpoint to send the data from flatFile csv to clickHouse
-
+    // convert the flatfile to click house
     @PostMapping("/flatfile-to-clickhouse")
-    public ResponseEntity<?>flatFileToClickHouse(@RequestBody IngestionRequest request){
-        try{
+    public ResponseEntity<?> flatFileToClickHouse(@RequestBody IngestionRequest request) {
+        try {
             long count = flatFileService.flatFileToClickHouse(
                     request.getFileName(),
                     request.getDelimiter(),
                     request.getTableName(),
                     request.getColumns()
             );
-
-            return ResponseEntity.ok(new IngestionResult(count,"ingestion completed"));
-        }
-        catch (Exception e){
-            return ResponseEntity.status(500).body("Error :" + e.getMessage());
+            return ResponseEntity.ok(new IngestionResult(count, "Ingestion completed"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 }
