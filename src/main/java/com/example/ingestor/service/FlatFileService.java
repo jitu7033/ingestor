@@ -27,7 +27,7 @@ public class FlatFileService {
      * @param delimiter  The delimiter used in the CSV file (e.g., "," or ";").
      * @param tableName  The name of the target ClickHouse table to insert data into.
      * @param columns    The list of column names in the ClickHouse table to receive the CSV data.
-     * @return The number of records processed from the CSV file (includes rows inserted).
+     * @return The number of records processed frdocker restart clickhouse-serverom the CSV file (includes rows inserted).
      * @throws Exception If file reading fails, database operations encounter errors, or input validation fails.
      * @warning Table name and columns are not sanitized, making the query vulnerable to SQL injection.
      * @warning File path is not secured; direct use of fileName could allow access to unauthorized directories.

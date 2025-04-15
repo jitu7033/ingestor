@@ -1,14 +1,15 @@
 package com.example.ingestor.service;
 
+import com.example.ingestor.model.ClickHouseConnectionDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.io.PrintWriter;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import com.opencsv.CSVWriter;
 
@@ -23,6 +24,86 @@ public class ClickHouseService {
     // Autowired DataSource for ClickHouse database connectivity.
     @Autowired
     private DataSource dataSource;
+    private ClickHouseConnectionDetails connectionDetails;
+
+    // setter for dynamic configuration (injected or set via ui)
+
+    public void setConnectionDetails(ClickHouseConnectionDetails connectionDetails){
+        this.connectionDetails = connectionDetails;
+        this.dataSource = null;
+    }
+
+
+    // lazy initialize with data source or with jwt token
+
+    private DataSource getDataSource(){
+        if(dataSource == null &&  connectionDetails != null){
+            try{
+                String url = "jdbc:clickhouse://" + connectionDetails.getHost() + ":" + connectionDetails.getPort()
+                        + "/" + connectionDetails.getDatabase() + "?compress=0";
+
+                if(connectionDetails.getJwtToken()!=null && !connectionDetails.getJwtToken().isEmpty()){
+                    url += "&jwt=" + connectionDetails.getJwtToken(); // add jwt token
+                }
+
+                String finalUrl = url;
+                dataSource = new javax.sql.DataSource(){
+                    @Override
+                    public <T> T unwrap(Class<T> iface) throws SQLException {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+                        return false;
+                    }
+
+                    @Override
+                    public Connection getConnection() throws java.sql.SQLException{
+                        return DriverManager.getConnection(finalUrl,connectionDetails.getUsername(),connectionDetails.getPassword());
+                    }
+                    
+                    @Override
+                    public Connection getConnection(String username, String password) throws SQLException {
+                        return null;
+                    }
+
+                    @Override
+                    public PrintWriter getLogWriter() throws SQLException {
+                        return null;
+                    }
+
+                    @Override
+                    public void setLogWriter(PrintWriter out) throws SQLException {
+
+                    }
+
+                    @Override
+                    public void setLoginTimeout(int seconds) throws SQLException {
+
+                    }
+
+                    @Override
+                    public int getLoginTimeout() throws SQLException {
+                        return 0;
+                    }
+
+                    @Override
+                    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+                        return null;
+                    }
+                };
+
+            }
+            catch (Exception e){
+                throw new RuntimeException("Failed to configure data sources " + e.getMessage());
+            }
+        }
+        return dataSource;
+    }
+
+
+
 
     /**
      * Tests connectivity to the ClickHouse database.
