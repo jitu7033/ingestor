@@ -232,6 +232,26 @@ public class ClickHouseService {
         }
     }
 
+
+    public List<List<String>> getTableData(String tableName, List<String> columns) throws Exception {
+        List<List<String>> data = new ArrayList<>();
+        String query = "SELECT " + String.join(", ", columns) + " FROM " + tableName;
+        try (Connection conn = getEffectiveDataSource().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            int columnCount = columns.size();
+            while (rs.next()) {
+                List<String> row = new ArrayList<>();
+                for (int i = 1; i <= columnCount; i++) {
+                    row.add(rs.getString(i));
+                }
+                data.add(row);
+            }
+        }
+        return data;
+    }
+
+
     /**
      * Escapes an identifier (e.g., table or column name) to prevent SQL injection.
      * Wraps the identifier in backticks.

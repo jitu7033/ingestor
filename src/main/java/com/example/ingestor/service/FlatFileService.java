@@ -1,7 +1,10 @@
 
 package com.example.ingestor.service;
 
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -67,5 +70,20 @@ public class FlatFileService {
     }
 
 
-
+    public List<List<String>> getFlatFileData(String fileName, String delimiter) throws Exception {
+        List<List<String>> data = new ArrayList<>();
+        CSVParser parser = new CSVParserBuilder()
+                .withSeparator(delimiter.charAt(0))
+                .build();
+        try (CSVReader reader = new CSVReaderBuilder(new FileReader(fileName))
+                .withCSVParser(parser)
+                .build()) {
+            reader.readNext(); // Skip headers
+            String[] nextLine;
+            while ((nextLine = reader.readNext()) != null) {
+                data.add(List.of(nextLine));
+            }
+        }
+        return data;
+    }
 }
