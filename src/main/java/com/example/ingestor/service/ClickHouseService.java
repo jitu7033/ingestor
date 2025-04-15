@@ -62,7 +62,7 @@ public class ClickHouseService {
                     public Connection getConnection() throws java.sql.SQLException{
                         return DriverManager.getConnection(finalUrl,connectionDetails.getUsername(),connectionDetails.getPassword());
                     }
-                    
+
                     @Override
                     public Connection getConnection(String username, String password) throws SQLException {
                         return null;
@@ -151,7 +151,7 @@ public class ClickHouseService {
      */
     public List<String> getTableColumns(String tableName) throws Exception {
         List<String> columns = new ArrayList<>();
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getDataSource().getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("DESCRIBE TABLE " + tableName)) {
             while (rs.next()) {
@@ -178,7 +178,7 @@ public class ClickHouseService {
         if (columns.isEmpty()) throw new IllegalArgumentException("No columns selected");
         String query = "SELECT " + String.join(", ", columns) + " FROM " + tableName;
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getDataSource().getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query);
              java.io.FileWriter fileWriter = new java.io.FileWriter(fileName);
@@ -206,4 +206,39 @@ public class ClickHouseService {
             return count;
         }
     }
+
+    public  long clickHouseJoinFlatFile(List<String> tables, String joinCondition, List<String> columns, String fileName, String delimiter) {
+        if(tables.size() < 2) throw new IllegalArgumentException("At least Two table for join ");
+        String query = "SELECT " + String.join(", ",columns) + "FROM " + tables.get(0);
+        for(int i = 1; i < tables.size(); i++){
+            query += " JOIN " + tables.get(i) + " ON " + joinCondition;
+        }
+        try(Connection conn = getDataSource().getConnection();
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+            java.io.FileWriter fileWriter = new java.io.FileWriter(fileName);
+            com.opencsv.CSVWriter writer = new com.opencsv.CSVWriter(
+                    fileWriter,
+                    delimiter.charAt(0),
+                    '"',
+                    '\\',
+                    "\n")){
+            long count = 0;
+
+            writer.writeNext(columns.toArray(new String[0]));
+            while(rs.next()){
+                String[] row = new String[columns.size()];
+                for(int i = 0; i < columns.size(); i++){
+                    row[i] = rs.getString(i + 1);
+                }
+                writer.writeNext(row);
+                count++;
+            }
+
+            return count;
+        }catch (Exception e){
+            return 0;
+        }
+    }
+
 }

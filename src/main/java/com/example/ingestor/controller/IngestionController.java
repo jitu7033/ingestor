@@ -1,8 +1,10 @@
 
 package com.example.ingestor.controller;
 
+import com.example.ingestor.model.ClickHouseConnectionDetails;
 import com.example.ingestor.model.IngestionRequest;
 import com.example.ingestor.model.IngestionResult;
+import com.example.ingestor.model.JoinIngestionRequest;
 import com.example.ingestor.service.ClickHouseService;
 import com.example.ingestor.service.FlatFileService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,19 @@ public class IngestionController {
     @Autowired
     private FlatFileService flatFileService;
 
+
+    @PostMapping("/configure-connection")
+    public ResponseEntity<String>configureConnection(@RequestBody ClickHouseConnectionDetails details){
+        clickHouseService.setConnectionDetails(details);
+
+        try{
+            String testResult = clickHouseService.testConnection();
+            return ResponseEntity.ok(testResult);
+        }
+        catch (Exception e){
+            return ResponseEntity.status(500).body("Configuration failed : " + e.getMessage());
+        }
+    }
 
     // check connection are established or not
     @GetMapping("/test-connection")
@@ -78,6 +93,25 @@ public class IngestionController {
             return ResponseEntity.ok(new IngestionResult(count, "Ingestion completed"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+
+    // post mapping clickHouse join to flatFile
+
+    @PostMapping("clickhouse-join-to-flatfile")
+    public ResponseEntity<?>clickHouseJoinToFlatFile(@RequestBody JoinIngestionRequest request){
+        try{
+            long count = clickHouseService.clickHouseJoinFlatFile(
+                    request.getTables(),
+                    request.getJoinCondition(),
+                    request.getColumns(),
+                    request.getFileName(),
+                    request.getDelimiter()
+            );
+            return ResponseEntity.ok(new IngestionResult(count,"Join Ingestion completed"));
+
+        }catch (Exception e){
+            return ResponseEntity.status(500).body("Error : " + e.getMessage());
         }
     }
 }
